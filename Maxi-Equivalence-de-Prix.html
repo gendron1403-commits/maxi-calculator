@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Maxi - Équivalence de Prix</title>
+  <meta name="description" content="Comparez le prix d’un paquet chez Maxi au prix par kilo ou par livre du concurrent.">
+  <meta name="theme-color" content="#143ca8">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23143ca8'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='white' font-family='sans-serif' font-size='25'%3E%3D%3C/text%3E%3C/svg%3E">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 5% 5%,#407bdf 0,transparent 50%),radial-gradient(ellipse at 100% 100%,#177399 0,transparent 55%),linear-gradient(135deg,#133886,#0b224f);color:#152d56;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;padding:32px 16px}
+    main{max-width:540px;margin:0 auto;padding:28px;background:#fff;border-radius:26px;border-top:6px solid #ffdb4d;box-shadow:0 24px 70px #07183455}
+    h1{font-size:1.7rem;line-height:1.2;letter-spacing:-.035em;margin:0 0 26px;color:#133886}
+    form{display:grid;gap:20px}label{display:block;font-weight:600;margin-bottom:8px}
+    input{width:100%;min-height:58px;border:1px solid #bdcce5;border-radius:12px;background:#f5f8ff;padding:13px 16px;color:#172e59;font-family:inherit;font-size:1.25rem;font-variant-numeric:tabular-nums;box-shadow:inset 0 1px 2px #173c7910}
+    input:focus-visible{outline:3px solid #2465ca;outline-offset:3px;background:#fff}
+    .price-row{display:flex;gap:10px;flex-wrap:wrap}.price-row input{flex:1 1 160px;min-width:0}
+    .price-row select{flex:0 1 190px;min-width:190px;max-width:100%;min-height:58px;border:1px solid #bdcce5;border-radius:12px;background:#eaf1ff;padding:12px;color:#173c79;font:inherit;font-size:1.25rem;font-weight:600}
+    .price-row select:focus-visible{outline:3px solid #2465ca;outline-offset:3px}
+    .result{margin-top:26px;background:linear-gradient(120deg,#102f77,#1d56bd);color:#fff;border-radius:18px;padding:24px;box-shadow:0 8px 20px #143ca82b}
+    #result-label{font-weight:500}.amount{display:block;color:#ffe16b;font-size:clamp(2rem,10vw,3.4rem);font-weight:750;line-height:1.25;font-variant-numeric:tabular-nums;margin:7px 0 14px;overflow-wrap:anywhere}
+    .difference{margin:0;padding-top:12px;border-top:1px solid #ffffff40;font-weight:500;font-variant-numeric:tabular-nums}
+    footer{margin-top:20px;color:#576a86;font-size:.875rem}.error{color:#a11923;margin:18px 0 0}[hidden]{display:none!important}
+    @media(max-width:400px){body{padding:16px 12px}main{padding:22px 18px;border-radius:20px}h1{font-size:1.55rem}.result{padding:20px}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Maxi - Équivalence de Prix</h1>
+  <form id="comparison" novalidate>
+    <div><label for="weight">Poids du paquet Maxi</label><div class="price-row"><input id="weight" type="text" inputmode="decimal" value="450" autocomplete="off"><select id="weight-unit" aria-label="Unité du poids du paquet Maxi"><option value="g">g · grammes</option><option value="kg">kg · kilos</option><option value="lb">lb · livres</option></select></div></div>
+    <div><label for="price">Prix du paquet Maxi ($)</label><input id="price" type="text" inputmode="decimal" value="8,50" autocomplete="off"></div>
+    <div><label for="competitor">Prix du concurrent</label><div class="price-row"><input id="competitor" type="text" inputmode="decimal" value="10,96" autocomplete="off"><select id="unit" aria-label="Unité du prix du concurrent"><option value="kg">$/kg · kilo</option><option value="lb">$/lb · livre</option></select></div></div>
+  </form>
+  <p id="error" class="error" role="alert" hidden></p>
+  <section id="result" class="result" aria-live="polite" aria-atomic="true" aria-label="Résultat de la comparaison">
+    <div id="result-label">Prix équivalent pour 450 g</div>
+    <output id="total" class="amount" for="weight weight-unit competitor unit">4,93 $</output>
+    <p id="difference" class="difference">Concurrent moins cher de 3,57 $</p>
+  </section>
+  <footer>© gendron1403@gmail.com</footer>
+</main>
+<script>
+(() => {
+  const el = id => document.getElementById(id);
+  const money = new Intl.NumberFormat('fr-CA',{style:'currency',currency:'CAD'});
+  const number = new Intl.NumberFormat('fr-CA',{maximumFractionDigits:6});
+  function read(id) {
+    const value=el(id).value.trim().replace(/\s/g,'');
+    return /^\d+(?:[.,]\d+)?$/.test(value) ? Number(value.replace(',','.')) : NaN;
+  }
+  function calculate(weight,price,competitor,unit='kg',weightUnit='g') {
+    const grams=weight*({g:1,kg:1000,lb:453.59237}[weightUnit]);
+    const total=grams/(unit==='lb'?453.59237:1000)*competitor;
+    if (!['g','kg','lb'].includes(weightUnit)||!['kg','lb'].includes(unit)||![weight,grams,price,competitor,total].every(Number.isFinite)||weight<=0||price<0||competitor<0) throw new Error('Entrez un poids supérieur à zéro et deux prix valides.');
+    return {weight:weight,weight_unit:weightUnit,weight_grams:grams,maxi_price:price,competitor_price:competitor,competitor_unit:unit,equivalent_price:total,difference:price-total};
+  }
+  function update() {
+    try {
+      const result=calculate(read('weight'),read('price'),read('competitor'),el('unit').value,el('weight-unit').value);
+      el('error').hidden=true;el('result').hidden=false;
+      el('result-label').textContent='Prix équivalent pour '+number.format(result.weight)+' '+result.weight_unit;
+      el('total').textContent=money.format(result.equivalent_price);
+      const d=result.difference;
+      el('difference').textContent=Math.abs(d)<1e-9?'Même prix.':Math.abs(d)<.005?'Écart inférieur à 0,01 $.':(d>0?'Concurrent moins cher de ':'Maxi moins cher de ')+money.format(Math.abs(d));
+      return result;
+    } catch(error) {el('error').textContent=error.message;el('error').hidden=false;el('result').hidden=true;return null;}
+  }
+  el('comparison').addEventListener('submit',event=>event.preventDefault());
+  ['weight','weight-unit','price','competitor','unit'].forEach(id=>el(id).addEventListener('input',update));
+  update();
+  const context=document.modelContext;
+  if (context?.registerTool) {
+    try {
+      Promise.resolve(context.registerTool({name:'compare_prices',title:'Comparer les prix',description:'Renseigne le poids du paquet Maxi en grammes, kilos ou livres, son prix et le prix du concurrent par kilo ou livre.',inputSchema:{type:'object',properties:{weight:{type:'number',exclusiveMinimum:0},weight_unit:{type:'string',enum:['g','kg','lb']},maxi_price:{type:'number',minimum:0},competitor_price:{type:'number',minimum:0},competitor_unit:{type:'string',enum:['kg','lb']}},required:['weight','weight_unit','maxi_price','competitor_price','competitor_unit'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){const r=calculate(input.weight,input.maxi_price,input.competitor_price,input.competitor_unit,input.weight_unit);el('weight').value=String(r.weight);el('weight-unit').value=r.weight_unit;el('price').value=String(r.maxi_price);el('competitor').value=String(r.competitor_price);el('unit').value=r.competitor_unit;return update();}})).catch(()=>{});
+    } catch(error) {}
+  }
+})();
+</script>
+</body>
+</html>
